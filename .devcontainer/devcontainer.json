@@ -1,8 +1,7 @@
 {
     "name": "OpenLane VLSI Workshop",
-    "image": "efabless/openlane:v0.21",
-    "features": {
-        "ghcr.io/devcontainers/features/desktop-lite:1": {}
+    "build": {
+        "dockerfile": "Dockerfile"
     },
     "forwardPorts": [6080],
     "portsAttributes": {
@@ -11,6 +10,6 @@
             "visibility": "public"
         }
     },
-    "postCreateCommand": "bash .devcontainer/setup-workshop.sh",
-    "remoteUser": "openlane"
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "remoteUser": "vscode"
 }

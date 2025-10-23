@@ -1,47 +1,45 @@
-# Start from the official OpenLane image
-FROM efabless/openlane:v0.21
+# Start from Ubuntu 20.04 (which has apt-get and matches OpenLane requirements)
+FROM ubuntu:20.04
 
-# Switch to root to install system packages and manage files
-USER root
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install essential packages for the GUI, VNC, and for handling archives
+# Install system dependencies including desktop environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    wget \
+    unzip \
+    git \
+    make \
+    python3 \
+    python3-pip \
+    python3-venv \
     xvfb \
     xfce4 \
-    xfce4-goodies \
+    xfce4-terminal \
     firefox \
-    wget \
-    unzip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    x11vnc \
+    novnc \
+    websockify \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install noVNC and websockify
-RUN pip3 install --no-cache-dir novnc websockify
+# Create a user for the workshop
+RUN useradd -m -s /bin/bash vscode && \
+    echo 'vscode ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Create Desktop directory for the openlane user
-RUN mkdir -p /home/openlane/Desktop && \
-    chown -R 1000:1000 /home/openlane/Desktop
+# Switch to the user
+USER vscode
+WORKDIR /home/vscode
 
-# --- DOWNLOAD AND EXTRACT work.zip TO DESKTOP ---
-# Download the work.zip file from your DigitalOcean space
-RUN wget -O /tmp/work.zip "https://vsd-labs.sgp1.cdn.digitaloceanspaces.com/vsd-labs/work.zip"
+# Clone and install OpenLane v0.21
+RUN git clone https://github.com/The-OpenROAD-Project/OpenLane.git && \
+    cd OpenLane && \
+    git checkout v0.21
 
-# Extract the zip file directly to the Desktop
-RUN unzip /tmp/work.zip -d /home/openlane/Desktop/ && \
-    rm /tmp/work.zip
+# Set up the OpenLane environment
+ENV OPENLANE_ROOT=/home/vscode/OpenLane
+ENV PATH="${OPENLANE_ROOT}/tools/OpenROAD:${OPENLANE_ROOT}/tools/yosys:${PATH}"
 
-# Set the ownership of the extracted files to the 'openlane' user
-RUN chown -R 1000:1000 /home/openlane/Desktop/work
-
-# Switch back to the non-root 'openlane' user for security
-USER 1000
-
-# Set the working directory to home (traditional Linux location)
-WORKDIR /home/openlane
-
-# Set the PDK_ROOT environment variable to point to the PDK inside the extracted work.zip
-ENV PDK_ROOT=/home/openlane/Desktop/work/tools/openlane_working_dir/pdks
-
-# Add PDK_ROOT to bashrc for persistence
-RUN echo "export PDK_ROOT=/home/openlane/Desktop/work/tools/openlane_working_dir/pdks" >> ~/.bashrc
+# Create Desktop directory
+RUN mkdir -p /home/vscode/Desktop

@@ -1,5 +1,5 @@
 {
-    "name": "OpenLane VLSI Workshop",
+    "name": "OpenLane VLSI Workshop - Exact v0.21 Environment",
     "build": {
         "dockerfile": "Dockerfile"
     },
@@ -10,6 +10,6 @@
             "visibility": "public"
         }
     },
-    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "postCreateCommand": "bash .devcontainer/setup-workshop.sh",
     "remoteUser": "vscode"
 }

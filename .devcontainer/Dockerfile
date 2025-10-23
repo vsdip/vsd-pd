@@ -33,9 +33,25 @@ USER vscode
 WORKDIR /home/vscode
 
 # Clone and install OpenLane v0.21
-RUN git clone https://github.com/The-OpenROAD-Project/OpenLane.git && \
-    cd OpenLane && \
-    git checkout v0.21
+# Remove the git clone OpenLane section and replace with:
+
+# Install OpenLane dependencies natively
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    tcl \
+    tcllib \
+    tcl-trf \
+    tclx \
+    tk \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install specific Tcl packages that OpenLane needs
+RUN pip3 install --no-cache-dir \
+    click \
+    pandas \
+    numpy \
+    pyyaml
 
 # Set up the OpenLane environment
 ENV OPENLANE_ROOT=/home/vscode/OpenLane

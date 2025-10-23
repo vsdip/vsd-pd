@@ -1,0 +1,18 @@
+{
+    "name": "OpenLane VLSI Workshop",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "remoteUser": "openlane",
+    "features": {
+        "ghcr.io/devcontainers/features/desktop-lite:1": {}
+    },
+    "forwardPorts": [6080, 5900],
+    "portsAttributes": {
+        "6080": {
+            "label": "noVNC Desktop",
+            "visibility": "public"
+        }
+    },
+    "postCreateCommand": "bash .devcontainer/scripts/startup.sh"
+}

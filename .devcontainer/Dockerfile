@@ -30,14 +30,6 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
-    # Set SUDO_USER to avoid the unbound variable error
-    export SUDO_USER=root && \
-    # Remove sudo commands from setup.sh
-    sed -i 's/sudo //g' setup.sh && \
-    # Run setup without interactive prompts
-    yes | ./setup.sh || true && \
-    # Build OpenROAD manually instead of using the script
-    cd tools && \
     ./build_openroad.sh --local && \
     cd /tmp && \
     rm -rf OpenROAD-flow-scripts

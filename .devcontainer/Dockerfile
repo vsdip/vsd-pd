@@ -44,19 +44,17 @@ RUN apt update && apt install -y \
     googletest \
     && rm -rf /var/lib/apt/lists/*
 
-# Build and install GTest
-RUN cd /usr/src/googletest && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make && \
-    make install
 
-# Install OpenROAD via conda (most reliable method)
+
+# Install OpenROAD via conda with TOS acceptance
 RUN apt update && apt install -y wget && \
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     bash miniconda.sh -b -p /opt/conda && \
     rm miniconda.sh
+
+# Accept Conda Terms of Service
+RUN /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
 # Install OpenROAD via conda
 RUN /opt/conda/bin/conda install -c litex-hub openroad -y && \

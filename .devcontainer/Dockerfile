@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Preinstall OSS CAD Suite (has yosys, so skip -eqy)
+# Preinstall OSS CAD Suite
 RUN set -eux; \
     curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
     -o /tmp/oss-cad.tgz && \
@@ -33,29 +33,36 @@ RUN set -eux; \
     rm /tmp/oss-cad.tgz
 ENV PATH="/opt/oss-cad/bin:${PATH}"
 
-# Install only necessary build dependencies manually
+# Install ALL required build dependencies including GTest
 RUN apt update && apt install -y \
     git build-essential cmake \
-    tcl-dev libboost-all-dev libeigen3-dev \
-    libspdlog-dev libyaml-cpp-dev \
-    qtbase5-dev libqt5charts5-dev \
+    tcl-dev tk-dev swig \
+    bison flex \
+    libboost-all-dev \
+    libspdlog-dev \
+    libeigen3-dev \
+    libz-dev \
+    libreadline-dev \
+    libffi-dev \
+    libsqlite3-dev \
+    libpcre2-dev \
+    libyaml-cpp-dev \
+    qtbase5-dev \
+    libqt5charts5-dev \
+    libgtest-dev \
     && apt clean && rm -rf /var/lib/apt/lists/*
 
-# SWIG 4.x + headers needed by OpenROAD’s bindings
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    swig4.0 tcl-dev python3-dev cmake g++ make && \
-    update-alternatives --install /usr/bin/swig swig /usr/bin/swig4.0 50 && \
-    rm -rf /var/lib/apt/lists/*
+# Build and install GTest
+RUN cd /usr/src/googletest && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make && \
+    make install
 
-# (optional but helps CMake locate SWIG cleanly)
-ENV SWIG_EXECUTABLE=/usr/bin/swig \
-    SWIG_DIR=/usr/share/swig/4.0
-
-# Build OpenROAD only (skip dependency installer since we have OSS CAD)
+# Build OpenROAD
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
-    # Skip -all since we have OSS CAD Suite, just build OpenROAD
     MAKEJOBS=2 ./build_openroad.sh --local && \
     cd /tmp && rm -rf OpenROAD-flow-scripts
 

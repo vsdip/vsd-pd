@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Preinstall OSS CAD Suite (has yosys with -eqy, smtbmc, etc.)
+# Preinstall OSS CAD Suite (has yosys, so skip -eqy)
 RUN set -eux; \
     curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
     -o /tmp/oss-cad.tgz && \
@@ -33,12 +33,20 @@ RUN set -eux; \
     rm /tmp/oss-cad.tgz
 ENV PATH="/opt/oss-cad/bin:${PATH}"
 
+# Install only necessary build dependencies manually
+RUN apt update && apt install -y \
+    git build-essential cmake \
+    tcl-dev libboost-all-dev libeigen3-dev \
+    libspdlog-dev libyaml-cpp-dev \
+    qtbase5-dev libqt5charts5-dev \
+    && apt clean && rm -rf /var/lib/apt/lists/*
+
+# Build OpenROAD only (skip dependency installer since we have OSS CAD)
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
-    chmod +x etc/DependencyInstaller.sh && \
-    ./etc/DependencyInstaller.sh -all && \
-    ./build_openroad.sh --local && \
+    # Skip -all since we have OSS CAD Suite, just build OpenROAD
+    MAKEJOBS=2 ./build_openroad.sh --local && \
     cd /tmp && rm -rf OpenROAD-flow-scripts
 
 

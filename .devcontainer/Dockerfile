@@ -24,15 +24,19 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Install OpenROAD with manual dependency handling
+# Install OpenROAD dependencies using their official script
+RUN apt update && apt install -y \
+    wget git build-essential cmake curl unzip && \
+    cd /tmp && \
+    wget https://raw.githubusercontent.com/The-OpenROAD-Project/OpenROAD/main/etc/DependencyInstaller.sh && \
+    chmod +x DependencyInstaller.sh && \
+    ./DependencyInstaller.sh -base -common && \
+    rm DependencyInstaller.sh
+
+# Now install the OpenROAD .deb package (dependencies should be satisfied)
 RUN cd /tmp && \
     wget https://github.com/Precision-Innovations/OpenROAD/releases/download/latest-bin/openroad_2.0_amd64-ubuntu20.04.deb && \
-    # Extract and inspect dependencies
-    dpkg -x ./openroad_2.0_amd64-ubuntu20.04.deb /tmp/openroad-extract && \
-    # Try to force install ignoring dependencies (use with caution)
-    dpkg -i --ignore-depends=tcl-tclreadline ./openroad_2.0_amd64-ubuntu20.04.deb || true && \
-    # Install available dependencies
-    apt update && apt install -f -y && \
+    apt install -y ./openroad_2.0_amd64-ubuntu20.04.deb && \
     rm openroad_2.0_amd64-ubuntu20.04.deb
 
 # Set locale

@@ -52,18 +52,15 @@ RUN cd /usr/src/googletest && \
     make && \
     make install
 
-# Clone and build OpenROAD from source with specific tag (more stable)
-RUN cd /tmp && \
-    git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD.git && \
-    cd OpenROAD && \
-    git checkout openroad-2.0 && \
-    mkdir build && \
-    cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && \
-    make install && \
-    cd /tmp && \
-    rm -rf OpenROAD
+# Install OpenROAD via conda (most reliable method)
+RUN apt update && apt install -y wget && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
+    bash miniconda.sh -b -p /opt/conda && \
+    rm miniconda.sh
+
+# Install OpenROAD via conda
+RUN /opt/conda/bin/conda install -c litex-hub openroad -y && \
+    ln -s /opt/conda/bin/* /usr/local/bin/
 
 # Set locale
 RUN locale-gen en_US.UTF-8

@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Install all build dependencies including GTest
+# Install build dependencies for OpenROAD
 RUN apt update && apt install -y \
     git build-essential cmake \
     tcl-dev tk-dev swig \
@@ -40,25 +40,22 @@ RUN apt update && apt install -y \
     libyaml-cpp-dev \
     qtbase5-dev \
     libqt5charts5-dev \
-    libgtest-dev \
-    googletest \
     && rm -rf /var/lib/apt/lists/*
 
-
-
-# Install OpenROAD via conda with TOS acceptance
-RUN apt update && apt install -y wget && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
-    bash miniconda.sh -b -p /opt/conda && \
-    rm miniconda.sh
-
-# Accept Conda Terms of Service
-RUN /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-
-# Install OpenROAD via conda
-RUN /opt/conda/bin/conda install -c litex-hub openroad -y && \
-    ln -s /opt/conda/bin/* /usr/local/bin/
+# Clone and build OpenROAD with specific working commit
+RUN cd /tmp && \
+    git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD.git && \
+    cd OpenROAD && \
+    # Use a known working commit
+    git checkout a1fd7d3 && \
+    git submodule update --init --recursive && \
+    mkdir build && \
+    cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && \
+    make -j$(nproc) && \
+    make install && \
+    cd /tmp && \
+    rm -rf OpenROAD
 
 # Set locale
 RUN locale-gen en_US.UTF-8

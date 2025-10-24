@@ -24,47 +24,15 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Preinstall OSS CAD Suite
-RUN set -eux; \
-    curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
-    -o /tmp/oss-cad.tgz && \
-    mkdir -p /opt && tar -xzf /tmp/oss-cad.tgz -C /opt && \
-    ln -s /opt/oss-cad-suite /opt/oss-cad && \
-    rm /tmp/oss-cad.tgz
-ENV PATH="/opt/oss-cad/bin:${PATH}"
+# Install OpenROAD from pre-built binary (simplest approach)
+RUN apt update && apt install -y wget && \
+    wget https://github.com/Precision-Innovations/OpenROAD/releases/download/2024-12-14/openroad_2.0-17598-ga008522d8_amd64-ubuntu-20.04.deb -O /tmp/openroad.deb && \
+    apt install -y ./tmp/openroad.deb && \
+    rm /tmp/openroad.deb && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
-# Install ALL required build dependencies including GTest
-RUN apt update && apt install -y \
-    git build-essential cmake \
-    tcl-dev tk-dev swig \
-    bison flex \
-    libboost-all-dev \
-    libspdlog-dev \
-    libeigen3-dev \
-    libz-dev \
-    libreadline-dev \
-    libffi-dev \
-    libsqlite3-dev \
-    libpcre2-dev \
-    libyaml-cpp-dev \
-    qtbase5-dev \
-    libqt5charts5-dev \
-    libgtest-dev \
-    && apt clean && rm -rf /var/lib/apt/lists/*
-
-# Build and install GTest
-RUN cd /usr/src/googletest && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make && \
-    make install
-
-# Build OpenROAD
-RUN cd /tmp && \
-    git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
-    cd OpenROAD-flow-scripts && \
-    MAKEJOBS=2 ./build_openroad.sh --local && \
-    cd /tmp && rm -rf OpenROAD-flow-scripts
+# Verify installation
+RUN which openroad && openroad -version
 
 
 

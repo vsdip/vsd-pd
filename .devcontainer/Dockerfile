@@ -31,7 +31,7 @@ RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
     chmod +x etc/DependencyInstaller.sh && \
-    sudo ./etc/DependencyInstaller.sh -all && \
+    ./etc/DependencyInstaller.sh -all && \
     ./build_openroad.sh --local && \
     cd /tmp && \
     rm -rf OpenROAD-flow-scripts

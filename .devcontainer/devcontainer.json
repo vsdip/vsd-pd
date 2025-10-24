@@ -1,5 +1,5 @@
 {
-    "name": "Latest OpenLane Only",
+    "name": "OpenLane VLSI Workshop - Final",
     "build": {
         "dockerfile": "Dockerfile"
     },

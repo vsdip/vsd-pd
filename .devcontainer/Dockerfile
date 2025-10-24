@@ -11,7 +11,7 @@ RUN apt-get update && \
     xvfb xfce4 xfce4-session xfce4-panel xfdesktop4 xfwm4 \
     xfce4-terminal thunar dbus-x11 x11vnc novnc websockify \
     # EDA tools available in Ubuntu
-    yosys magic ngspice gtkwave verilator iverilog klayout \
+    magic ngspice gtkwave verilator iverilog klayout \
     # Build tools
     build-essential cmake clang tcl-dev git \
     # Dependencies

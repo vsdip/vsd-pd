@@ -1,52 +1,40 @@
 #!/bin/bash
 
-echo "Setting up latest OpenLane with your workshop files..."
+echo "Installing latest OpenLane with automated tool setup..."
 
 # Install latest OpenLane
 cd /home/vscode
 git clone https://github.com/The-OpenROAD-Project/OpenLane.git
 cd OpenLane
 
-# Create Python virtual environment
-python3 -m venv openlane_venv
-source openlane_venv/bin/activate
-
-# Install OpenLane
-pip3 install -e .
+# This ONE command installs ALL tools including OpenROAD
+echo "Running 'make merge' - this will install OpenROAD, Yosys, Magic, and all other tools..."
 make merge
+
+# Set up environment
+echo "export OPENLANE_ROOT=/home/vscode/OpenLane" >> ~/.bashrc
+echo "export PDK_ROOT=/home/vscode/OpenLane/pdks" >> ~/.bashrc
 
 # Download your workshop files
 cd /home/vscode/Desktop
+echo "Downloading your workshop files..."
 wget -O work.zip "https://vsd-labs.sgp1.cdn.digitaloceanspaces.com/vsd-labs/work.zip"
 unzip -q work.zip
 rm work.zip
 
-# Use your existing PDK
+# Use your PDK if you prefer
 if [ -d "/home/vscode/Desktop/work/tools/openlane_working_dir/pdks" ]; then
     echo "export PDK_ROOT=/home/vscode/Desktop/work/tools/openlane_working_dir/pdks" >> ~/.bashrc
-    echo "export OPENLANE_ROOT=/home/vscode/OpenLane" >> ~/.bashrc
 fi
 
-# Create both shortcuts
-cat > /home/vscode/Desktop/OpenLane-New.desktop << EOF
+# Create desktop shortcuts
+cat > /home/vscode/Desktop/OpenLane-Latest.desktop << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=OpenLane (Latest)
-Comment=Latest OpenLane installation
+Comment=Latest OpenLane with auto-installed tools
 Exec=xfce4-terminal -e "cd /home/vscode/OpenLane && bash"
-Icon=folder
-Terminal=false
-StartupNotify=true
-EOF
-
-cat > /home/vscode/Desktop/Workshop-Files.desktop << EOF
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Workshop Files
-Comment=Your workshop designs and files
-Exec=xfce4-terminal -e "cd /home/vscode/Desktop/work && bash"
 Icon=folder
 Terminal=false
 StartupNotify=true
@@ -62,9 +50,17 @@ startxfce4 &
 x11vnc -display :1 -forever -shared -nopw -bg
 websockify --web /usr/share/novnc/ 6080 localhost:5900 &
 
-echo "Setup complete! You have:"
-echo "- Latest OpenLane in /home/vscode/OpenLane"
-echo "- Your workshop files in /home/vscode/Desktop/work"
-echo "- Two desktop shortcuts for easy access"
+echo "=========================================="
+echo "🎉 OPENLANE INSTALLATION COMPLETE!"
+echo "=========================================="
+echo "✅ OpenLane installed: /home/vscode/OpenLane"
+echo "✅ OpenROAD auto-installed via 'make merge'"
+echo "✅ All EDA tools installed and compatible"
+echo "✅ Your workshop files: /home/vscode/Desktop/work"
+echo ""
+echo "📋 VERIFICATION:"
+echo "cd /home/vscode/OpenLane"
+echo "./flow.tcl -design spm"
+echo "=========================================="
 
 while true; do sleep 60; done

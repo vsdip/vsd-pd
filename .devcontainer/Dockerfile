@@ -27,11 +27,13 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
 # Fix OpenROAD-flow-scripts installation by setting SUDO_USER and using manual build
+# Install OpenROAD-flow-scripts (skip equivalence tools to avoid Yosys error)
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
     chmod +x etc/DependencyInstaller.sh && \
-    ./etc/DependencyInstaller.sh -all && \
+    # Use -base -common instead of -all to skip equivalence tools
+    ./etc/DependencyInstaller.sh -base -common && \
     ./build_openroad.sh --local && \
     cd /tmp && \
     rm -rf OpenROAD-flow-scripts

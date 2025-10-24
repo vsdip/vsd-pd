@@ -1,5 +1,5 @@
 {
-    "name": "OpenLane VLSI Workshop - Final",
+    "name": "OpenLane VLSI Workshop",
     "build": {
         "dockerfile": "Dockerfile"
     },

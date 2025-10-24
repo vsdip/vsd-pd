@@ -24,38 +24,15 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Install build dependencies for OpenROAD
-RUN apt update && apt install -y \
-    git build-essential cmake \
-    tcl-dev tk-dev swig \
-    bison flex \
-    libboost-all-dev \
-    libspdlog-dev \
-    libeigen3-dev \
-    libz-dev \
-    libreadline-dev \
-    libffi-dev \
-    libsqlite3-dev \
-    libpcre2-dev \
-    libyaml-cpp-dev \
-    qtbase5-dev \
-    libqt5charts5-dev \
-    && rm -rf /var/lib/apt/lists/*
+
 
 # Clone and build OpenROAD with specific working commit
 RUN cd /tmp && \
-    git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD.git && \
-    cd OpenROAD && \
-    # Use a known working commit
-    git checkout a1fd7d3 && \
-    git submodule update --init --recursive && \
-    mkdir build && \
-    cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && \
-    make -j$(nproc) && \
-    make install && \
+    git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
+    cd OpenROAD-flow-scripts && \
+    sudo ./setup.sh && \
     cd /tmp && \
-    rm -rf OpenROAD
+rm -rf OpenROAD-flow-scripts
 
 # Set locale
 RUN locale-gen en_US.UTF-8

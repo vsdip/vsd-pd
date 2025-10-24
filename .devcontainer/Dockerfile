@@ -10,7 +10,7 @@ RUN apt-get update && \
     # Desktop environment
     xvfb xfce4 xfce4-session xfce4-panel xfdesktop4 xfwm4 \
     xfce4-terminal thunar dbus-x11 x11vnc novnc websockify \
-    # Build tools
+    # Build tools for OpenLane's make merge
     build-essential cmake clang tcl-dev git \
     # Basic dependencies
     tcl tcllib tcl-trf tclx tk locales sudo \

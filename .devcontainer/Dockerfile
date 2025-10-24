@@ -28,7 +28,7 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 RUN apt update && apt install -y \
     wget git build-essential cmake curl unzip && \
     cd /tmp && \
-    wget https://raw.githubusercontent.com/The-OpenROAD-Project/OpenROAD/main/etc/DependencyInstaller.sh && \
+    wget https://raw.githubusercontent.com/The-OpenROAD-Project/OpenROAD/refs/heads/master/etc/DependencyInstaller.sh && \
     chmod +x DependencyInstaller.sh && \
     ./DependencyInstaller.sh -base -common && \
     rm DependencyInstaller.sh

@@ -7,13 +7,26 @@ cd /home/vscode
 git clone https://github.com/The-OpenROAD-Project/OpenLane.git
 cd OpenLane
 
+# Create Python virtual environment
+python3 -m venv openlane_venv
+source openlane_venv/bin/activate
+
+# Install OpenLane and required Python packages
+pip3 install -e .
+pip3 install pandas numpy matplotlib jinja2 XlsxWriter
+
 # This ONE command installs ALL tools including OpenROAD
 echo "Running 'make merge' - this will install OpenROAD, Yosys, Magic, and all other tools..."
 make merge
 
+# Verify Python packages are available
+echo "Verifying Python packages..."
+python3 -c "import pandas, numpy, matplotlib, jinja2, XlsxWriter; print('✅ All Python packages installed successfully')"
+
 # Set up environment
 echo "export OPENLANE_ROOT=/home/vscode/OpenLane" >> ~/.bashrc
 echo "export PDK_ROOT=/home/vscode/OpenLane/pdks" >> ~/.bashrc
+echo "source /home/vscode/OpenLane/openlane_venv/bin/activate" >> ~/.bashrc
 
 # Download your workshop files
 cd /home/vscode/Desktop
@@ -56,6 +69,7 @@ echo "=========================================="
 echo "✅ OpenLane installed: /home/vscode/OpenLane"
 echo "✅ OpenROAD auto-installed via 'make merge'"
 echo "✅ All EDA tools installed and compatible"
+echo "✅ Python packages: pandas, numpy, matplotlib, jinja2, XlsxWriter"
 echo "✅ Your workshop files: /home/vscode/Desktop/work"
 echo ""
 echo "📋 VERIFICATION:"

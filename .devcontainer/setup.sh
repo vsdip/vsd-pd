@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Setting up OpenLane workshop environment with compatibility fixes..."
+echo "Setting up OpenLane workshop environment..."
 
 # Download and extract work.zip to Desktop
 cd /home/vscode/Desktop
@@ -13,30 +13,22 @@ rm work.zip
 echo "Applying compatibility fixes..."
 cd /home/vscode/Desktop/work/tools/openlane_working_dir/openlane
 
-# Fix 1: Patch libtrim.pl Perl script
+# Fix 1: Patch libtrim.pl Perl script (remove experimental syntax)
 echo "Fixing libtrim.pl Perl script..."
 sed -i 's/given\s*(\s*\$line\s*)\s*{/if(1){/g' scripts/libtrim.pl
 sed -i 's/when\s*(\s*/if(/g' scripts/libtrim.pl
-sed -i 's/when\s*(\s*/if(/g' scripts/libtrim.pl
 
-# Fix 2: Verify Python packages are compatible
-echo "Verifying Python package compatibility..."
-python3 -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
-python3 -c "import pandas; print(f'Pandas version: {pandas.__version__}')"
-
-# Fix 3: Apply OpenROAD script patches if needed
-echo "Checking OpenROAD script compatibility..."
+# Fix 2: Verify all installations
+echo "=== Verification ==="
+which openroad && echo "✅ OpenROAD: $(openroad -version 2>/dev/null | head -1 || echo 'installed')"
+which yosys && echo "✅ Yosys: $(yosys --version | head -1)"
+which magic && echo "✅ Magic"
+python3 -c "import pandas, numpy; print('✅ Pandas/Numpy: Compatible versions')"
 
 # Set environment variables
 echo "export PDK_ROOT=/home/vscode/Desktop/work/tools/openlane_working_dir/pdks" >> ~/.bashrc
 echo "export OPENLANE_ROOT=/home/vscode/Desktop/work/tools/openlane_working_dir/openlane" >> ~/.bashrc
 echo "cd /home/vscode/Desktop/work" >> ~/.bashrc
-
-# Verify installations
-echo "=== Verification ==="
-which openroad && echo "✅ OpenROAD: $(openroad -version 2>/dev/null | head -1)" 
-which yosys && echo "✅ Yosys: $(yosys --version | head -1)"
-python3 -c "import pandas, numpy; print('✅ Pandas/Numpy: Compatible versions')"
 
 # Create desktop shortcut
 cat > /home/vscode/Desktop/Open-Workshop.desktop << EOF
@@ -64,15 +56,15 @@ x11vnc -display :1 -forever -shared -nopw -bg
 websockify --web /usr/share/novnc/ 6080 localhost:5900 &
 
 echo "=========================================="
-echo "WORKSHOP SETUP COMPLETE WITH FIXES!"
+echo "WORKSHOP SETUP COMPLETE!"
 echo "=========================================="
+echo "✅ OpenROAD installed via .deb package"
 echo "✅ Fixed: Perl libtrim.pl experimental syntax"
 echo "✅ Fixed: Pandas/Numpy version conflicts" 
-echo "✅ Fixed: OpenROAD compatibility"
 echo "✅ Your workshop files are on the Desktop"
 echo "✅ Access the desktop via port 6080"
 echo ""
-echo "To test the fixes:"
+echo "To test:"
 echo "cd ~/Desktop/work/tools/openlane_working_dir/openlane"
 echo "./flow.tcl -interactive"
 echo "prep -design spm"

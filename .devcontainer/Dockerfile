@@ -41,6 +41,16 @@ RUN apt update && apt install -y \
     qtbase5-dev libqt5charts5-dev \
     && apt clean && rm -rf /var/lib/apt/lists/*
 
+# SWIG 4.x + headers needed by OpenROAD’s bindings
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    swig4.0 tcl-dev python3-dev cmake g++ make && \
+    update-alternatives --install /usr/bin/swig swig /usr/bin/swig4.0 50 && \
+    rm -rf /var/lib/apt/lists/*
+
+# (optional but helps CMake locate SWIG cleanly)
+ENV SWIG_EXECUTABLE=/usr/bin/swig \
+    SWIG_DIR=/usr/share/swig/4.0
+
 # Build OpenROAD only (skip dependency installer since we have OSS CAD)
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \

@@ -30,7 +30,7 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
-    sudo ./setup.sh && \
+    ./setup.sh && \
     ./build_openroad.sh --local && \
     cd /tmp && \
 rm -rf OpenROAD-flow-scripts

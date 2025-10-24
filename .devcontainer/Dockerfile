@@ -26,14 +26,14 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 # Build and install tcl-tclreadline from source (the missing dependency)
 RUN cd /tmp && \
-    git clone https://github.com/flightaware/tcl-tclreadline.git && \
-    cd tcl-tclreadline && \
+    git clone https://github.com/flightaware/tclreadline && \
+    cd tclreadline && \
     autoreconf -fi && \
     ./configure && \
     make && \
     make install && \
     cd /tmp && \
-    rm -rf tcl-tclreadline
+    rm -rf tclreadline
 
 # Install OpenROAD .deb package
 RUN cd /tmp && \

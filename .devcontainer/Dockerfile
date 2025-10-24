@@ -13,7 +13,7 @@ RUN apt-get update && \
     # EDA tools available in Ubuntu
     magic ngspice gtkwave verilator iverilog klayout \
     # Build tools
-    build-essential cmake clang tcl-dev git \
+    build-essential cmake clang tcl-dev git curl ca-certificates gnupg \
     # Dependencies
     tcl tcllib tcl-trf tclx tk locales sudo \
     perl libfile-which-perl \

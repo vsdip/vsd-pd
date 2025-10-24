@@ -12,7 +12,7 @@ RUN apt-get update && \
     xfce4-terminal thunar dbus-x11 x11vnc novnc websockify \
     # EDA tools available in Ubuntu
     yosys magic ngspice gtkwave verilator iverilog klayout \
-    # Build tools
+    # Build tools for OpenROAD
     build-essential cmake clang tcl-dev git \
     # Dependencies
     tcl tcllib tcl-trf tclx tk locales sudo \
@@ -20,8 +20,18 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages that OpenLane needs
-RUN pip3 install pandas numpy matplotlib jinja2 XlsxWriter
+# Install COMPATIBLE Python packages (fix version conflicts)
+RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
+
+# Install OpenROAD (compatible with OpenLane v0.21)
+RUN git clone https://github.com/The-OpenROAD-Project/OpenROAD && \
+    cd OpenROAD && \
+    git checkout 417a5a6 && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install && \
+    cd / && rm -rf OpenROAD
 
 # Set locale
 RUN locale-gen en_US.UTF-8

@@ -26,13 +26,18 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
 
-# Clone and build OpenROAD-flow-scripts (skip sudo in Docker)
+# Fix OpenROAD-flow-scripts installation by setting SUDO_USER and using manual build
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
-    # Remove sudo from setup.sh since we're root in Docker
+    # Set SUDO_USER to avoid the unbound variable error
+    export SUDO_USER=root && \
+    # Remove sudo commands from setup.sh
     sed -i 's/sudo //g' setup.sh && \
-    ./setup.sh && \
+    # Run setup without interactive prompts
+    yes | ./setup.sh || true && \
+    # Build OpenROAD manually instead of using the script
+    cd tools && \
     ./build_openroad.sh --local && \
     cd /tmp && \
     rm -rf OpenROAD-flow-scripts

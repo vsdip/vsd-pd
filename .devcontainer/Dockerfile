@@ -24,18 +24,21 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Install OpenROAD dependencies using their official script
-RUN apt update && apt install -y \
-    wget git build-essential cmake curl unzip && \
+# Build and install tcl-tclreadline from source (the missing dependency)
+RUN cd /tmp && \
+    git clone https://github.com/flightaware/tcl-tclreadline.git && \
+    cd tcl-tclreadline && \
+    autoreconf -fi && \
+    ./configure && \
+    make && \
+    make install && \
     cd /tmp && \
-    wget https://raw.githubusercontent.com/The-OpenROAD-Project/OpenROAD/refs/heads/master/etc/DependencyInstaller.sh && \
-    chmod +x DependencyInstaller.sh && \
-    ./DependencyInstaller.sh -base -common && \
-    rm DependencyInstaller.sh
+    rm -rf tcl-tclreadline
 
-# Now install the OpenROAD .deb package (dependencies should be satisfied)
+# Install OpenROAD .deb package
 RUN cd /tmp && \
     wget https://github.com/Precision-Innovations/OpenROAD/releases/download/latest-bin/openroad_2.0_amd64-ubuntu20.04.deb && \
+    apt update && \
     apt install -y ./openroad_2.0_amd64-ubuntu20.04.deb && \
     rm openroad_2.0_amd64-ubuntu20.04.deb
 

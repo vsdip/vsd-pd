@@ -18,6 +18,9 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python packages that OpenLane needs for reporting
+RUN pip3 install pandas numpy matplotlib jinja2 XlsxWriter
+
 # Set locale
 RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8

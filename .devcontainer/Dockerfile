@@ -24,19 +24,24 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
+# Preinstall OSS CAD Suite (has yosys with -eqy, smtbmc, etc.)
+RUN set -eux; \
+    curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
+    -o /tmp/oss-cad.tgz && \
+    mkdir -p /opt && tar -xzf /tmp/oss-cad.tgz -C /opt && \
+    ln -s /opt/oss-cad-suite /opt/oss-cad && \
+    rm /tmp/oss-cad.tgz
+ENV PATH="/opt/oss-cad/bin:${PATH}"
 
-
-# Fix OpenROAD-flow-scripts installation by setting SUDO_USER and using manual build
-# Install OpenROAD-flow-scripts (skip equivalence tools to avoid Yosys error)
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
     chmod +x etc/DependencyInstaller.sh && \
-    # Use -base -common instead of -all to skip equivalence tools
-    ./etc/DependencyInstaller.sh -base -common && \
+    ./etc/DependencyInstaller.sh -all && \
     ./build_openroad.sh --local && \
-    cd /tmp && \
-    rm -rf OpenROAD-flow-scripts
+    cd /tmp && rm -rf OpenROAD-flow-scripts
+
+
 
 # Set locale
 RUN locale-gen en_US.UTF-8

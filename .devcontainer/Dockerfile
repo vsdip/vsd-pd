@@ -26,14 +26,16 @@ RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
 
-# Clone and build OpenROAD with specific working commit
+# Clone and build OpenROAD-flow-scripts (skip sudo in Docker)
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts && \
     cd OpenROAD-flow-scripts && \
+    # Remove sudo from setup.sh since we're root in Docker
+    sed -i 's/sudo //g' setup.sh && \
     ./setup.sh && \
     ./build_openroad.sh --local && \
     cd /tmp && \
-rm -rf OpenROAD-flow-scripts
+    rm -rf OpenROAD-flow-scripts
 
 # Set locale
 RUN locale-gen en_US.UTF-8

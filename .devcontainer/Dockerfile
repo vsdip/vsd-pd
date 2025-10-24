@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
 
-# Install build dependencies for OpenROAD
+# Install all build dependencies including GTest
 RUN apt update && apt install -y \
     git build-essential cmake \
     tcl-dev tk-dev swig \
@@ -40,12 +40,23 @@ RUN apt update && apt install -y \
     libyaml-cpp-dev \
     qtbase5-dev \
     libqt5charts5-dev \
+    libgtest-dev \
+    googletest \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build OpenROAD from source
+# Build and install GTest
+RUN cd /usr/src/googletest && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make && \
+    make install
+
+# Clone and build OpenROAD from source with specific tag (more stable)
 RUN cd /tmp && \
     git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD.git && \
     cd OpenROAD && \
+    git checkout openroad-2.0 && \
     mkdir build && \
     cd build && \
     cmake .. -DCMAKE_BUILD_TYPE=Release && \

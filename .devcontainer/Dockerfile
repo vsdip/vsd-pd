@@ -59,18 +59,21 @@ RUN set -eux; \
         -DSLANG_INCLUDE_TESTS=OFF && \
   cmake --build /tmp/slang/build -j"$(nproc)"
 
+# Build yosys-slang plugin (against OSS-CAD-Suite Yosys + the Slang you built)
 RUN set -eux; \
   git clone --recursive https://github.com/povik/yosys-slang /tmp/yosys-slang && \
   make -C /tmp/yosys-slang \
-       YOSYS=/opt/oss-cad-suite/bin/yosys \
-       SLANG_DIR=/tmp/slang/build \
-       -j"$(nproc)"; \
-  cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
-  rm -rf /tmp/slang /tmp/yosys-slang
+      YOSYS=/opt/oss-cad-suite/bin/yosys \
+      SLANG_DIR=/tmp/slang/build \
+      -j"$(nproc)"; \
+  # plugin lands under build/
+  install -Dm755 /tmp/yosys-slang/build/slang.so /opt/oss-cad-suite/share/yosys/plugins/slang.so && \
+  rm -rf /tmp/yosys-slang
 
-# Verify the plugin (don’t fail the build if just probing)
-RUN /opt/oss-cad-suite/bin/yosys -V && \
-    /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+# Verify the plugin loads
+ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins"
+RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+
 
 # -------- OpenROAD-flow-scripts (ORFS) --------
 RUN git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts /opt/orfs

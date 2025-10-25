@@ -23,17 +23,6 @@ RUN apt-get update && \
 # Install COMPATIBLE Python packages (fix version conflicts)
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
-# Newer GCC for C++20 (<concepts>) on Ubuntu 20.04
-RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends \
-      software-properties-common && \
-    add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
-    apt-get update && apt-get install -y --no-install-recommends \
-      g++-12 && \
-    rm -rf /var/lib/apt/lists/*
-
-# Use GCC 12 for C/C++
-ENV CC=gcc-12 CXX=g++-12
 
 # 1) Yosys, etc. via OSS CAD Suite (has yosys -eqy)
 RUN set -eux; \
@@ -59,38 +48,39 @@ RUN apt update && apt install -y wget && \
     rm /tmp/openroad.deb && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-# 6) Build and install slang + yosys-slang plugin
+# Install newer GCC (12) for C++20 <concepts>
 RUN set -eux; \
-    apt-get update && \
-    # Install dependencies and latest cmake from Kitware
-    apt-get install -y --no-install-recommends apt-transport-https ca-certificates gnupg software-properties-common && \
-    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add - && \
-    add-apt-repository 'deb https://apt.kitware.com/ubuntu/ focal main' && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        git cmake ninja-build build-essential python3 python3-dev && \
-    cmake --version && \
-    \
-    # Build slang core library
+    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+    add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        gcc-12 g++-12 libstdc++-12-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Build slang with GCC 12
+RUN set -eux; \
     git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
     cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DSLANG_INCLUDE_TESTS=OFF && \
-    cmake --build /tmp/slang/build -j"$(nproc)" && \
-    \
-    # Build yosys-slang plugin linked to OSS CAD Suite
+        -DSLANG_INCLUDE_TESTS=OFF \
+        -DCMAKE_C_COMPILER=/usr/bin/gcc-12 \
+        -DCMAKE_CXX_COMPILER=/usr/bin/g++-12 && \
+    cmake --build /tmp/slang/build -j"$(nproc)"
+
+# Build yosys-slang plugin against OSS-CAD-Suite Yosys + Slang
+RUN set -eux; \
     git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
     make -C /tmp/yosys-slang \
+        CC=/usr/bin/gcc-12 CXX=/usr/bin/g++-12 \
         YOSYS=/opt/oss-cad-suite/bin/yosys \
         SLANG_DIR=/tmp/slang/build \
         -j"$(nproc)" && \
-    \
-    # Install the slang plugin into Yosys plugin path
     cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
-    rm -rf /tmp/slang /tmp/yosys-slang && \
-    \
-    # Verify plugin installation
+    rm -rf /tmp/slang /tmp/yosys-slang
+
+# Verify plugin loads
+RUN /opt/oss-cad-suite/bin/yosys -V && \
     /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+
 
 
 # 7) Set environment variables used in ORFS flow

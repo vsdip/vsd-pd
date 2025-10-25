@@ -1,30 +1,29 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install ALL required packages
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# -------- Base packages --------
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core system
-    wget unzip git make python3 python3-pip \
-    # Desktop environment
+    wget curl unzip git make python3 python3-pip \
+    # Desktop environment (optional; keep if you want GUI/VNC)
     xvfb xfce4 xfce4-session xfce4-panel xfdesktop4 xfwm4 \
     xfce4-terminal thunar dbus-x11 x11vnc novnc websockify \
-    # EDA tools available in Ubuntu
+    # EDA tools from Ubuntu
     magic ngspice gtkwave verilator iverilog \
     # Build tools
-    build-essential cmake clang tcl-dev git curl ca-certificates gnupg \
-    # Dependencies
+    build-essential cmake ninja-build clang tcl-dev \
+    # Flow helpers
+    time bc gawk \
+    # Tcl/locale/misc
     tcl tcllib tcl-trf tclx tk locales sudo \
-    perl libfile-which-perl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    perl libfile-which-perl ca-certificates gnupg lsb-release \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install COMPATIBLE Python packages (fix version conflicts)
-RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
+# (Optional) Python libs
+RUN pip3 install --no-cache-dir numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
-
-# 1) Yosys, etc. via OSS CAD Suite (has yosys -eqy)
+# -------- OSS CAD Suite (yosys, etc.) --------
 RUN set -eux; \
   curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
     -o /tmp/oss-cad.tgz; \
@@ -33,123 +32,65 @@ RUN set -eux; \
   rm /tmp/oss-cad.tgz
 ENV PATH="/opt/oss-cad/bin:${PATH}"
 
-# 2) KLayout (use package matching your Ubuntu)
-#    If you already have it elsewhere, you can skip this block.
+# -------- KLayout for Ubuntu 22.04 --------
 RUN set -eux; \
   curl -L -o /tmp/klayout.deb \
-    https://www.klayout.org/downloads/Ubuntu-20/klayout_0.29.0-1_amd64.deb; \
+    https://www.klayout.org/downloads/Ubuntu-22/klayout_0.29.0-1_amd64.deb; \
   apt-get update && apt-get install -y --no-install-recommends /tmp/klayout.deb; \
   rm -rf /var/lib/apt/lists/* /tmp/klayout.deb
 
-# Install OpenROAD from pre-built binary (simplest approach)
-RUN apt update && apt install -y wget && \
-    wget https://github.com/Precision-Innovations/OpenROAD/releases/download/2024-12-14/openroad_2.0-17598-ga008522d8_amd64-ubuntu-20.04.deb -O /tmp/openroad.deb && \
-    apt install -y ./tmp/openroad.deb && \
-    rm /tmp/openroad.deb && \
-    apt clean && rm -rf /var/lib/apt/lists/*
-
-# libc++ for Clang
+# -------- OpenROAD prebuilt for Ubuntu 22.04 --------
+ARG OPENROAD_DEB_URL="https://github.com/Precision-Innovations/OpenROAD/releases/download/2024-12-14/openroad_2.0-17598-ga008522d8_amd64-ubuntu-22.04.deb"
 RUN set -eux; \
-    apt-get update && \
-    apt-get install -y software-properties-common wget gnupg && \
-    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
-    add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-14 main" && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends libc++-14-dev libc++abi-14-dev && \
-    rm -rf /var/lib/apt/lists/*
+  apt-get update && apt-get install -y --no-install-recommends wget; \
+  wget -O /tmp/openroad.deb "$OPENROAD_DEB_URL"; \
+  apt-get install -y /tmp/openroad.deb; \
+  rm -rf /var/lib/apt/lists/* /tmp/openroad.deb
+RUN which openroad && openroad -version
 
-# Build Slang telling Clang to use libc++
+# -------- Build slang + yosys-slang (Jammy has CMake>=3.20 and g++-11 by default) --------
+# Uses system g++ (11 on 22.04) which supports C++20 <concepts>
 RUN set -eux; \
-    git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
-    cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DSLANG_INCLUDE_TESTS=OFF \
-      -DCMAKE_C_COMPILER=clang-14 \
-      -DCMAKE_CXX_COMPILER=clang++-14 \
-      -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
-      -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++" && \
-    cmake --build /tmp/slang/build -j"$(nproc)"
+  git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
+  cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DSLANG_INCLUDE_TESTS=OFF && \
+  cmake --build /tmp/slang/build -j"$(nproc)"
 
-
-# --- New CMake (>=3.20) so Slang config works ---
-ARG CMAKE_VER=3.29.6
 RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends ca-certificates curl xz-utils && \
-    curl -L -o /tmp/cmake.tgz \
-      https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz && \
-    tar -xzf /tmp/cmake.tgz -C /opt && \
-    ln -sf /opt/cmake-${CMAKE_VER}-linux-x86_64/bin/* /usr/local/bin/ && \
-    rm -rf /tmp/cmake.tgz && cmake --version
+  git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
+  make -C /tmp/yosys-slang \
+       YOSYS=/opt/oss-cad-suite/bin/yosys \
+       SLANG_DIR=/tmp/slang/build \
+       -j"$(nproc)"; \
+  cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
+  rm -rf /tmp/slang /tmp/yosys-slang
 
-# --- Clang 14 toolchain for C++20 (<concepts>) ---
-RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends \
-      wget gnupg ca-certificates lsb-release && \
-    echo "deb [trusted=yes] https://apt.llvm.org/focal/ llvm-toolchain-focal-14 main" \
-      > /etc/apt/sources.list.d/llvm-14.list && \
-    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
-    apt-get update && apt-get install -y --no-install-recommends \
-      clang-14 lld-14 ninja-build build-essential python3 python3-dev git && \
-    rm -rf /var/lib/apt/lists/*
-
-# --- Build Slang with Clang 14 (uses the new cmake in /usr/local/bin) ---
-RUN set -eux; \
-    git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
-    cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DSLANG_INCLUDE_TESTS=OFF \
-      -DCMAKE_C_COMPILER=clang-14 \
-      -DCMAKE_CXX_COMPILER=clang++-14 && \
-    cmake --build /tmp/slang/build -j"$(nproc)"
-
-# --- Build yosys-slang plugin (against OSS-CAD-Suite Yosys + Slang you just built) ---
-RUN set -eux; \
-    git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
-    make -C /tmp/yosys-slang \
-      CC=clang-14 CXX=clang++-14 \
-      YOSYS=/opt/oss-cad-suite/bin/yosys \
-      SLANG_DIR=/tmp/slang/build \
-      -j"$(nproc)" && \
-    cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
-    rm -rf /tmp/slang /tmp/yosys-slang
-
-# --- Verify plugin loads (don’t fail the build on probe) ---
+# Verify the plugin (don’t fail the build if just probing)
 RUN /opt/oss-cad-suite/bin/yosys -V && \
     /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
 
-
-
-# 7) Set environment variables used in ORFS flow
-ENV PATH="/opt/oss-cad-suite/bin:${PATH}" \
-    YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
-    OPENROAD_EXE="/usr/bin/openroad" \
-    YOSYS_EXE="/opt/oss-cad-suite/bin/yosys"
-
-
-
-# 8) Final verification and flow setup
-# WORKDIR /opt/orfs
-# RUN /opt/oss-cad-suite/bin/yosys -help && \
-#    /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" && \
-#    openroad -help && \
-#    make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk -C flow && \
-#    make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk gui_final -C flow
-
-
-# Verify installation
-RUN which openroad && openroad -version
-
-# 4) ORFS (no submodules; we’re using prebuilt tools)
-RUN git clone https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts /opt/orfs
+# -------- OpenROAD-flow-scripts (ORFS) --------
+RUN git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts /opt/orfs
 WORKDIR /opt/orfs
 
-# Set locale
-RUN locale-gen en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en  
-ENV LC_ALL=en_US.UTF-8
+# Wire ORFS to binaries
+ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
+    OPENROAD_EXE="/usr/bin/openroad" \
+    YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
+    PATH="/opt/oss-cad-suite/bin:${PATH}"
 
-# Create user
+# (Optional) quick self-checks and a tiny flow smoke test
+# RUN /opt/oss-cad-suite/bin/yosys -help && \
+#     /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" && \
+#     openroad -help && \
+#     make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk -C flow -j"$(nproc)" && \
+#     make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk gui_final -C flow
+
+# -------- Locale and user --------
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en
+
 RUN useradd -m -s /bin/bash vscode && \
     echo 'vscode ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 

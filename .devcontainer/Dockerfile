@@ -60,7 +60,7 @@ RUN set -eux; \
   cmake --build /tmp/slang/build -j"$(nproc)"
 
 RUN set -eux; \
-  git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
+  git clone --recursive https://github.com/povik/yosys-slang /tmp/yosys-slang && \
   make -C /tmp/yosys-slang \
        YOSYS=/opt/oss-cad-suite/bin/yosys \
        SLANG_DIR=/tmp/slang/build \

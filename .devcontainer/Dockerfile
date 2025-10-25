@@ -36,7 +36,7 @@ ENV PATH="/opt/oss-cad/bin:${PATH}"
 #    If you already have it elsewhere, you can skip this block.
 RUN set -eux; \
   curl -L -o /tmp/klayout.deb \
-    https://www.klayout.org/downloads/Ubuntu-22.04/klayout_0.30.3-1_amd64.deb; \
+    https://www.klayout.org/downloads/Ubuntu-20/klayout_0.29.0-1_amd64.deb; \
   apt-get update && apt-get install -y --no-install-recommends /tmp/klayout.deb; \
   rm -rf /var/lib/apt/lists/* /tmp/klayout.deb
 

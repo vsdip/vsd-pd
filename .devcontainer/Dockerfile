@@ -48,42 +48,41 @@ RUN apt update && apt install -y wget && \
     rm /tmp/openroad.deb && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-# Install GCC 11 for full C++20 support (<concepts>)
+# Install Clang 14 (C++20) on Ubuntu 20.04
 RUN set -eux; \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        gcc-11 g++-11 libstdc++-11-dev && \
+    apt-get update && apt-get install -y --no-install-recommends \
+      wget gnupg ca-certificates lsb-release && \
+    echo "deb [trusted=yes] https://apt.llvm.org/focal/ llvm-toolchain-focal-14 main" \
+      > /etc/apt/sources.list.d/llvm-14.list && \
+    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    apt-get update && apt-get install -y --no-install-recommends \
+      clang-14 lld-14 ninja-build cmake build-essential python3 python3-dev git && \
     rm -rf /var/lib/apt/lists/*
 
-# Use GCC 11 as default
-ENV CC=/usr/bin/gcc-11 CXX=/usr/bin/g++-11
-
-
-# Build slang with GCC 12
+# Build Slang with Clang 14
 RUN set -eux; \
     git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
     cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DSLANG_INCLUDE_TESTS=OFF \
-        -DCMAKE_C_COMPILER=/usr/bin/gcc-12 \
-        -DCMAKE_CXX_COMPILER=/usr/bin/g++-12 && \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DSLANG_INCLUDE_TESTS=OFF \
+      -DCMAKE_C_COMPILER=clang-14 \
+      -DCMAKE_CXX_COMPILER=clang++-14 && \
     cmake --build /tmp/slang/build -j"$(nproc)"
 
-# Build yosys-slang plugin against OSS-CAD-Suite Yosys + Slang
+# Build yosys-slang plugin (against OSS-CAD-Suite Yosys + the Slang you just built)
 RUN set -eux; \
     git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
     make -C /tmp/yosys-slang \
-        CC=/usr/bin/gcc-12 CXX=/usr/bin/g++-12 \
-        YOSYS=/opt/oss-cad-suite/bin/yosys \
-        SLANG_DIR=/tmp/slang/build \
-        -j"$(nproc)" && \
+      CC=clang-14 CXX=clang++-14 \
+      YOSYS=/opt/oss-cad-suite/bin/yosys \
+      SLANG_DIR=/tmp/slang/build \
+      -j"$(nproc)" && \
     cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
     rm -rf /tmp/slang /tmp/yosys-slang
 
-# Verify plugin loads
+# Verify plugin loads (does not fail the build if probing fails)
 RUN /opt/oss-cad-suite/bin/yosys -V && \
     /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
-
 
 
 # 7) Set environment variables used in ORFS flow

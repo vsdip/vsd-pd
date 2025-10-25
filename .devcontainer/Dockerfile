@@ -48,16 +48,24 @@ RUN apt update && apt install -y wget && \
     rm /tmp/openroad.deb && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-# Install Clang 14 (C++20) on Ubuntu 20.04
+# libc++ for Clang
 RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends \
-      wget gnupg ca-certificates lsb-release && \
-    echo "deb [trusted=yes] https://apt.llvm.org/focal/ llvm-toolchain-focal-14 main" \
-      > /etc/apt/sources.list.d/llvm-14.list && \
-    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
-    apt-get update && apt-get install -y --no-install-recommends \
-      clang-14 lld-14 ninja-build cmake build-essential python3 python3-dev git && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends libc++-14-dev libc++abi-14-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Build Slang telling Clang to use libc++
+RUN set -eux; \
+    git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
+    cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DSLANG_INCLUDE_TESTS=OFF \
+      -DCMAKE_C_COMPILER=clang-14 \
+      -DCMAKE_CXX_COMPILER=clang++-14 \
+      -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+      -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++" && \
+    cmake --build /tmp/slang/build -j"$(nproc)"
+
 
 # --- New CMake (>=3.20) so Slang config works ---
 ARG CMAKE_VER=3.29.6

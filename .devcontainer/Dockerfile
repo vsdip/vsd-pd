@@ -51,6 +51,10 @@ RUN apt update && apt install -y wget && \
 # libc++ for Clang
 RUN set -eux; \
     apt-get update && \
+    apt-get install -y software-properties-common wget gnupg && \
+    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    add-apt-repository "deb http://apt.llvm.org/$(lsb_release -sc)/ llvm-toolchain-$(lsb_release -sc)-14 main" && \
+    apt-get update && \
     apt-get install -y --no-install-recommends libc++-14-dev libc++abi-14-dev && \
     rm -rf /var/lib/apt/lists/*
 

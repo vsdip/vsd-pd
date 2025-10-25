@@ -20,8 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     perl libfile-which-perl ca-certificates gnupg lsb-release \
  && rm -rf /var/lib/apt/lists/*
 
-# (Optional) Python libs
-RUN pip3 install --no-cache-dir numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
+# (Optional) Python libs from Ubuntu (avoid compiling)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-numpy python3-pandas python3-matplotlib python3-jinja2 python3-xlsxwriter && \
+    rm -rf /var/lib/apt/lists/*
 
 # -------- OSS CAD Suite (yosys, etc.) --------
 RUN set -eux; \

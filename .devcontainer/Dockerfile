@@ -23,6 +23,18 @@ RUN apt-get update && \
 # Install COMPATIBLE Python packages (fix version conflicts)
 RUN pip3 install numpy==1.21.0 pandas==1.3.0 matplotlib jinja2 XlsxWriter
 
+# Newer GCC for C++20 (<concepts>) on Ubuntu 20.04
+RUN set -eux; \
+    apt-get update && apt-get install -y --no-install-recommends \
+      software-properties-common && \
+    add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
+    apt-get update && apt-get install -y --no-install-recommends \
+      g++-12 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Use GCC 12 for C/C++
+ENV CC=gcc-12 CXX=g++-12
+
 # 1) Yosys, etc. via OSS CAD Suite (has yosys -eqy)
 RUN set -eux; \
   curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \

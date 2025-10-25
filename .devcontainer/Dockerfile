@@ -48,13 +48,16 @@ RUN apt update && apt install -y wget && \
     rm /tmp/openroad.deb && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-# Install newer GCC (12) for C++20 <concepts>
+# Install GCC 11 for full C++20 support (<concepts>)
 RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
-    add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
-    apt-get update && apt-get install -y --no-install-recommends \
-        gcc-12 g++-12 libstdc++-12-dev && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc-11 g++-11 libstdc++-11-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Use GCC 11 as default
+ENV CC=/usr/bin/gcc-11 CXX=/usr/bin/g++-11
+
 
 # Build slang with GCC 12
 RUN set -eux; \

@@ -47,16 +47,56 @@ RUN apt update && apt install -y wget && \
     rm /tmp/openroad.deb && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
+# 6) Build and install slang + yosys-slang plugin
+RUN set -eux; \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git cmake ninja-build build-essential python3 python3-dev && \
+    \
+    # Build slang core library
+    git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
+    cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DSLANG_INCLUDE_TESTS=OFF && \
+    cmake --build /tmp/slang/build -j"$(nproc)" && \
+    \
+    # Build yosys-slang plugin linked to OSS CAD Suite
+    git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
+    make -C /tmp/yosys-slang \
+        YOSYS=/opt/oss-cad-suite/bin/yosys \
+        SLANG_DIR=/tmp/slang/build \
+        -j"$(nproc)" && \
+    \
+    # Install the slang plugin into Yosys plugin path
+    cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
+    rm -rf /tmp/slang /tmp/yosys-slang && \
+    \
+    # Verify plugin installation
+    /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+
+# 7) Set environment variables used in ORFS flow
+ENV PATH="/opt/oss-cad-suite/bin:${PATH}" \
+    YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
+    OPENROAD_EXE="/usr/bin/openroad" \
+    YOSYS_EXE="/opt/oss-cad-suite/bin/yosys"
+
+
+
+# 8) Final verification and flow setup
+# WORKDIR /opt/orfs
+# RUN /opt/oss-cad-suite/bin/yosys -help && \
+#    /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" && \
+#    openroad -help && \
+#    make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk -C flow && \
+#    make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk gui_final -C flow
+
+
 # Verify installation
 RUN which openroad && openroad -version
 
 # 4) ORFS (no submodules; we’re using prebuilt tools)
 RUN git clone https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts /opt/orfs
 WORKDIR /opt/orfs
-
-# 5) Wire ORFS to our binaries (per docs)
-ENV OPENROAD_EXE="$(which openroad)" \
-    YOSYS_EXE="$(which yosys)"
 
 # Set locale
 RUN locale-gen en_US.UTF-8

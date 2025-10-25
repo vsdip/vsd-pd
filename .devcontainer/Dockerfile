@@ -59,7 +59,28 @@ RUN set -eux; \
       clang-14 lld-14 ninja-build cmake build-essential python3 python3-dev git && \
     rm -rf /var/lib/apt/lists/*
 
-# Build Slang with Clang 14
+# --- New CMake (>=3.20) so Slang config works ---
+ARG CMAKE_VER=3.29.6
+RUN set -eux; \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates curl xz-utils && \
+    curl -L -o /tmp/cmake.tgz \
+      https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz && \
+    tar -xzf /tmp/cmake.tgz -C /opt && \
+    ln -sf /opt/cmake-${CMAKE_VER}-linux-x86_64/bin/* /usr/local/bin/ && \
+    rm -rf /tmp/cmake.tgz && cmake --version
+
+# --- Clang 14 toolchain for C++20 (<concepts>) ---
+RUN set -eux; \
+    apt-get update && apt-get install -y --no-install-recommends \
+      wget gnupg ca-certificates lsb-release && \
+    echo "deb [trusted=yes] https://apt.llvm.org/focal/ llvm-toolchain-focal-14 main" \
+      > /etc/apt/sources.list.d/llvm-14.list && \
+    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    apt-get update && apt-get install -y --no-install-recommends \
+      clang-14 lld-14 ninja-build build-essential python3 python3-dev git && \
+    rm -rf /var/lib/apt/lists/*
+
+# --- Build Slang with Clang 14 (uses the new cmake in /usr/local/bin) ---
 RUN set -eux; \
     git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
     cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
@@ -69,7 +90,7 @@ RUN set -eux; \
       -DCMAKE_CXX_COMPILER=clang++-14 && \
     cmake --build /tmp/slang/build -j"$(nproc)"
 
-# Build yosys-slang plugin (against OSS-CAD-Suite Yosys + the Slang you just built)
+# --- Build yosys-slang plugin (against OSS-CAD-Suite Yosys + Slang you just built) ---
 RUN set -eux; \
     git clone --depth=1 https://github.com/YosysHQ/yosys-slang /tmp/yosys-slang && \
     make -C /tmp/yosys-slang \
@@ -80,9 +101,10 @@ RUN set -eux; \
     cp /tmp/yosys-slang/slang.so /opt/oss-cad-suite/share/yosys/plugins/ && \
     rm -rf /tmp/slang /tmp/yosys-slang
 
-# Verify plugin loads (does not fail the build if probing fails)
+# --- Verify plugin loads (don’t fail the build on probe) ---
 RUN /opt/oss-cad-suite/bin/yosys -V && \
     /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+
 
 
 # 7) Set environment variables used in ORFS flow

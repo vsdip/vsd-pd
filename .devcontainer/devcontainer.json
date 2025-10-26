@@ -1,5 +1,5 @@
 {
-  "name": "OpenLane VLSI Workshop",
+  "name": "Openroad on Cloud",
   "build": { "dockerfile": "Dockerfile" },
   "forwardPorts": [6080],
   "portsAttributes": {

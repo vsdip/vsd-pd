@@ -86,7 +86,7 @@ ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
     PATH="/opt/oss-cad-suite/bin:/usr/local/bin:${PATH}"
 
 # noVNC desktop starter (the resilient script you now use)
-COPY .devcontainer/start-desktop.sh /usr/local/bin/start-desktop.sh
+COPY start-desktop.sh /usr/local/bin/start-desktop.sh
 RUN chmod +x /usr/local/bin/start-desktop.sh
 
 # Locale + user

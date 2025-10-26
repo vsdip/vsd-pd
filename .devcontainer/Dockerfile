@@ -67,7 +67,6 @@ RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
 #WORKDIR /opt/orfs
 ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
     YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
-    OPENROAD_EXE="/usr/local/bin/openroad" \
     PATH="/opt/oss-cad-suite/bin:/usr/local/bin:${PATH}"
 
 # noVNC desktop starter (the resilient script you now use)

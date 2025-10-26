@@ -44,54 +44,55 @@ RUN set -eux; \
 # -------- OpenROAD (build from source) --------
 # Pin to a ref for reproducibility if you like:
 #   --build-arg OPENROAD_REF=<tag|commit|branch>
-ARG OPENROAD_REF=master
-RUN set -eux; \
-  git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD /opt/openroad; \
-  cd /opt/openroad; \
-  git checkout "${OPENROAD_REF}"; \
-  # Ensure submodules match the chosen ref
-  git submodule update --init --recursive; \
-  \
-  # Install deps (script uses apt; we're root in Docker)
-  ./etc/DependencyInstaller.sh -all; \
-  \
-  # Build (Release by default). Add -j to speed up.
-  ./etc/Build.sh -no-warnings; \
-  \
-  # Normalize binary location and make a stable path
-  mkdir -p /opt/openroad/build/bin; \
-  if [ ! -x /opt/openroad/build/bin/openroad ] && [ -x /opt/openroad/build/OpenROAD/src/openroad ]; then \
-      ln -sf /opt/openroad/build/OpenROAD/src/openroad /opt/openroad/build/bin/openroad; \
-  fi; \
-  /opt/openroad/build/bin/openroad -version
-ENV OPENROAD_EXE="/opt/openroad/build/bin/openroad"
-ENV PATH="/opt/openroad/build/bin:${PATH}"
+
+#ARG OPENROAD_REF=master
+#RUN set -eux; \
+#  git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD /opt/openroad; \
+#  cd /opt/openroad; \
+#  git checkout "${OPENROAD_REF}"; \
+#  # Ensure submodules match the chosen ref
+#  git submodule update --init --recursive; \
+#  \
+#  # Install deps (script uses apt; we're root in Docker)
+#  ./etc/DependencyInstaller.sh -all; \
+#  \
+#  # Build (Release by default). Add -j to speed up.
+#  ./etc/Build.sh -no-warnings; \
+#  \
+#  # Normalize binary location and make a stable path
+#  mkdir -p /opt/openroad/build/bin; \
+#  if [ ! -x /opt/openroad/build/bin/openroad ] && [ -x /opt/openroad/build/OpenROAD/src/openroad ]; then \
+#      ln -sf /opt/openroad/build/OpenROAD/src/openroad /opt/openroad/build/bin/openroad; \
+#  fi; \
+#  /opt/openroad/build/bin/openroad -version
+#ENV OPENROAD_EXE="/opt/openroad/build/bin/openroad"
+#ENV PATH="/opt/openroad/build/bin:${PATH}" 
 
 # -------- Build slang + yosys-slang (Jammy has CMake>=3.20 and g++-11) --------
-RUN set -eux; \
-  git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
-  cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DSLANG_INCLUDE_TESTS=OFF && \
-  cmake --build /tmp/slang/build -j"$(nproc)"
+#RUN set -eux; \
+#  git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
+#  cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
+#        -DCMAKE_BUILD_TYPE=Release \
+#        -DSLANG_INCLUDE_TESTS=OFF && \
+#  cmake --build /tmp/slang/build -j"$(nproc)"
 
 # Build yosys-slang plugin (against OSS-CAD-Suite Yosys + the Slang you built)
-RUN set -eux; \
-  git clone --recursive https://github.com/povik/yosys-slang /tmp/yosys-slang && \
-  make -C /tmp/yosys-slang \
-      YOSYS=/opt/oss-cad-suite/bin/yosys \
-      SLANG_DIR=/tmp/slang/build \
-      -j"$(nproc)"; \
-  install -Dm755 /tmp/yosys-slang/build/slang.so /opt/oss-cad-suite/share/yosys/plugins/slang.so && \
-  rm -rf /tmp/yosys-slang
-ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins"
-RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+#RUN set -eux; \
+#  git clone --recursive https://github.com/povik/yosys-slang /tmp/yosys-slang && \
+#  make -C /tmp/yosys-slang \
+#      YOSYS=/opt/oss-cad-suite/bin/yosys \
+#      SLANG_DIR=/tmp/slang/build \
+#      -j"$(nproc)"; \
+#  install -Dm755 /tmp/yosys-slang/build/slang.so /opt/oss-cad-suite/share/yosys/plugins/slang.so && \
+#  rm -rf /tmp/yosys-slang
+#ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins"
+#RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
 
 # Wire ORFS to binaries (use the source-built OpenROAD)
-ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
-    OPENROAD_EXE="/opt/openroad/build/bin/openroad" \
-    YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
-    PATH="/opt/oss-cad-suite/bin:/opt/openroad/build/bin:${PATH}"
+#ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
+#    OPENROAD_EXE="/opt/openroad/build/bin/openroad" \
+#    YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
+#    PATH="/opt/oss-cad-suite/bin:/opt/openroad/build/bin:${PATH}"
 
 # copy your start script into the image
 

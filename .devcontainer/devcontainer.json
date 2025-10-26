@@ -1,11 +1,11 @@
 {
-  "name": "Openroad on Cloud",
+  "name": "OpenLane VLSI Workshop",
   "build": { "dockerfile": "Dockerfile" },
   "forwardPorts": [6080],
   "portsAttributes": {
     "6080": { "label": "noVNC Desktop", "visibility": "public" }
   },
-  "postStartCommand": "bash /usr/local/bin/start-desktop.sh",
+  "postStartCommand": "bash -lc '/usr/local/bin/start-desktop.sh || true'",
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "remoteUser": "vscode"
 }

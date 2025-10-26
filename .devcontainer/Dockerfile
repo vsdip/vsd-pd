@@ -93,6 +93,11 @@ ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
     YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
     PATH="/opt/oss-cad-suite/bin:/opt/openroad/build/bin:${PATH}"
 
+# copy your start script into the image
+COPY start-desktop.sh /usr/local/bin/start-desktop.sh
+RUN chmod +x /usr/local/bin/start-desktop.sh
+
+
 # -------- Locale and user --------
 RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en

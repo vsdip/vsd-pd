@@ -1,31 +1,4 @@
-# ---------- Builder: build OpenROAD from source ----------
-FROM ubuntu:22.04 AS openroad-builder
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl ca-certificates build-essential cmake ninja-build tcl tcl-dev \
-    python3 python3-pip clang pkg-config libx11-dev libxext-dev libxrender-dev \
-    && rm -rf /var/lib/apt/lists/*
-WORKDIR /opt
 
-# Clone OpenROAD
-ARG OPENROAD_REF=master
-RUN git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD && \
-    cd OpenROAD && git checkout "${OPENROAD_REF}" && git submodule update --init --recursive
-
-# Install deps using project script (noninteractive)
-WORKDIR /opt/OpenROAD
-RUN ./etc/DependencyInstaller.sh -all
-
-# Build (Release by default)
-RUN ./etc/Build.sh -no-warnings
-
-# Normalize path (some builds drop the binary elsewhere)
-RUN mkdir -p /opt/openroad-artifacts/bin && \
-    if [ -x build/bin/openroad ]; then cp -a build/bin/openroad /opt/openroad-artifacts/bin/; \
-    elif [ -x build/OpenROAD/src/openroad ]; then cp -a build/OpenROAD/src/openroad /opt/openroad-artifacts/bin/; \
-    else echo "OpenROAD binary not found" && exit 1; fi
-
-# ---------- Final image: tools + slim OpenROAD binary ----------
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -58,10 +31,22 @@ RUN set -eux; \
   apt-get update && apt-get install -y --no-install-recommends /tmp/klayout.deb; \
   rm -rf /var/lib/apt/lists/* /tmp/klayout.deb
 
-# Copy the built OpenROAD binary only (keeps image tiny)
-COPY --from=openroad-builder /opt/openroad-artifacts/bin/openroad /usr/local/bin/openroad
-RUN /usr/local/bin/openroad -version || true
-ENV OPENROAD_EXE="/usr/local/bin/openroad"
+# -------- OpenROAD from your custom .deb --------
+ARG OPENROAD_DEB_URL="https://vsd-labs.sgp1.cdn.digitaloceanspaces.com/vsd-labs/openroad_2.0+custom_amd64.deb"
+RUN set -eux; \
+  apt-get update && apt-get install -y --no-install-recommends wget ca-certificates; \
+  wget -O /tmp/openroad.deb "$OPENROAD_DEB_URL"; \
+  apt-get install -y /tmp/openroad.deb || { \
+    # if dependencies are missing, fetch them
+    apt-get -f install -y; \
+  }; \
+  rm -rf /var/lib/apt/lists/* /tmp/openroad.deb
+
+# Verify and wire up env
+RUN openroad -version || true
+ENV OPENROAD_EXE="/usr/bin/openroad"
+
+
 ENV PATH="/usr/local/bin:${PATH}"
 
 # (Optional) slang + yosys-slang plugin

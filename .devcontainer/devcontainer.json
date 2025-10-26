@@ -5,7 +5,6 @@
   "portsAttributes": {
     "6080": { "label": "noVNC Desktop", "visibility": "public" }
   },
-  "postStartCommand": "bash -lc '/usr/local/bin/start-desktop.sh || true'",
-  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash -lc '/usr/local/bin/start-desktop.sh || true; exit 0'",
   "remoteUser": "vscode"
 }

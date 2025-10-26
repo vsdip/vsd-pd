@@ -1,21 +1,11 @@
 {
   "name": "OpenLane VLSI Workshop",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "build": { "dockerfile": "Dockerfile" },
   "forwardPorts": [6080],
   "portsAttributes": {
-    "6080": {
-      "label": "noVNC Desktop",
-      "visibility": "public"
-    }
+    "6080": { "label": "noVNC Desktop", "visibility": "public" }
   },
-
-  // runs after the container STARTS (every time), perfect for daemons
   "postStartCommand": "bash /usr/local/bin/start-desktop.sh",
-
-  // keep your existing create-time setup if you need it
   "postCreateCommand": "bash .devcontainer/setup.sh",
-
   "remoteUser": "vscode"
 }

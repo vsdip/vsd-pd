@@ -41,17 +41,33 @@ RUN set -eux; \
   apt-get update && apt-get install -y --no-install-recommends /tmp/klayout.deb; \
   rm -rf /var/lib/apt/lists/* /tmp/klayout.deb
 
-# -------- OpenROAD prebuilt for Ubuntu 22.04 --------
-ARG OPENROAD_DEB_URL="https://github.com/Precision-Innovations/OpenROAD/releases/download/2024-12-14/openroad_2.0-17598-ga008522d8_amd64-ubuntu-22.04.deb"
+# -------- OpenROAD (build from source) --------
+# Pin to a ref for reproducibility if you like:
+#   --build-arg OPENROAD_REF=<tag|commit|branch>
+ARG OPENROAD_REF=master
 RUN set -eux; \
-  apt-get update && apt-get install -y --no-install-recommends wget; \
-  wget -O /tmp/openroad.deb "$OPENROAD_DEB_URL"; \
-  apt-get install -y /tmp/openroad.deb; \
-  rm -rf /var/lib/apt/lists/* /tmp/openroad.deb
-RUN which openroad && openroad -version
+  git clone --recursive https://github.com/The-OpenROAD-Project/OpenROAD /opt/openroad; \
+  cd /opt/openroad; \
+  git checkout "${OPENROAD_REF}"; \
+  # Ensure submodules match the chosen ref
+  git submodule update --init --recursive; \
+  \
+  # Install deps (script uses apt; we're root in Docker)
+  ./etc/DependencyInstaller.sh -all; \
+  \
+  # Build (Release by default). Add -j to speed up.
+  ./etc/Build.sh -no-warnings; \
+  \
+  # Normalize binary location and make a stable path
+  mkdir -p /opt/openroad/build/bin; \
+  if [ ! -x /opt/openroad/build/bin/openroad ] && [ -x /opt/openroad/build/OpenROAD/src/openroad ]; then \
+      ln -sf /opt/openroad/build/OpenROAD/src/openroad /opt/openroad/build/bin/openroad; \
+  fi; \
+  /opt/openroad/build/bin/openroad -version
+ENV OPENROAD_EXE="/opt/openroad/build/bin/openroad"
+ENV PATH="/opt/openroad/build/bin:${PATH}"
 
-# -------- Build slang + yosys-slang (Jammy has CMake>=3.20 and g++-11 by default) --------
-# Uses system g++ (11 on 22.04) which supports C++20 <concepts>
+# -------- Build slang + yosys-slang (Jammy has CMake>=3.20 and g++-11) --------
 RUN set -eux; \
   git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
   cmake -S /tmp/slang -B /tmp/slang/build -G Ninja \
@@ -66,31 +82,16 @@ RUN set -eux; \
       YOSYS=/opt/oss-cad-suite/bin/yosys \
       SLANG_DIR=/tmp/slang/build \
       -j"$(nproc)"; \
-  # plugin lands under build/
   install -Dm755 /tmp/yosys-slang/build/slang.so /opt/oss-cad-suite/share/yosys/plugins/slang.so && \
   rm -rf /tmp/yosys-slang
-
-# Verify the plugin loads
 ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins"
 RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
 
-
-# -------- OpenROAD-flow-scripts (ORFS) --------
-RUN git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts /opt/orfs
-WORKDIR /opt/orfs
-
-# Wire ORFS to binaries
+# Wire ORFS to binaries (use the source-built OpenROAD)
 ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
-    OPENROAD_EXE="/usr/bin/openroad" \
+    OPENROAD_EXE="/opt/openroad/build/bin/openroad" \
     YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
-    PATH="/opt/oss-cad-suite/bin:${PATH}"
-
-# (Optional) quick self-checks and a tiny flow smoke test
-# RUN /opt/oss-cad-suite/bin/yosys -help && \
-#     /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" && \
-#     openroad -help && \
-#     make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk -C flow -j"$(nproc)" && \
-#     make DESIGN_CONFIG=./designs/nangate45/gcd/config.mk gui_final -C flow
+    PATH="/opt/oss-cad-suite/bin:/opt/openroad/build/bin:${PATH}"
 
 # -------- Locale and user --------
 RUN locale-gen en_US.UTF-8

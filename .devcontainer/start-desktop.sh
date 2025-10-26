@@ -1,58 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LOGDIR=/var/log/novnc
-mkdir -p "$LOGDIR"
-chmod 777 "$LOGDIR" || true
+# ---- config ----
+export DISPLAY=${DISPLAY:-:1}
+SCREEN_GEOM=${SCREEN_GEOM:-1440x900x24}
+NOVNC_WEBROOT=${NOVNC_WEBROOT:-/usr/share/novnc}
+CERT_PATH="${HOME}/.novnc/self.pem"
+VNC_PORT=5900
+NOVNC_PORT=6080
 
-# Export DISPLAY for this shell and future shells
-export DISPLAY=:1
-if ! grep -q "export DISPLAY=:1" /etc/profile.d/00-display.sh 2>/dev/null; then
-  echo 'export DISPLAY=:1' | sudo tee /etc/profile.d/00-display.sh >/dev/null || true
-fi
+log() { echo "[noVNC] $*"; }
 
-# Helper: start-if-not-running
-start() {
-  local name="$1"; shift
-  if pgrep -x "$name" >/dev/null 2>&1; then
-    echo "$name already running"
+# 0) ensure X/ICE unix sockets exist with correct ownership (tmp is ephemeral each start)
+if [ ! -d /tmp/.X11-unix ] || [ ! -d /tmp/.ICE-unix ]; then
+  if command -v sudo >/dev/null 2>&1; then
+    sudo install -d -m 1777 -o root -g root /tmp/.X11-unix /tmp/.ICE-unix
   else
-    echo "starting $name: $*"
-    nohup "$@" >>"$LOGDIR/$name.log" 2>&1 &
-    sleep 0.5
-  }
-}
+    # fallback: best effort without sudo
+    mkdir -p /tmp/.X11-unix /tmp/.ICE-unix || true
+    chmod 1777 /tmp/.X11-unix /tmp/.ICE-unix || true
+  fi
+fi
 
-# Xvfb (virtual X server)
+# 1) start Xvfb (virtual display)
 if ! xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
-  start Xvfb Xvfb "$DISPLAY" -screen 0 1440x900x24
+  log "starting Xvfb on $DISPLAY ($SCREEN_GEOM)"
+  nohup Xvfb "$DISPLAY" -screen 0 "$SCREEN_GEOM" >/tmp/xvfb.log 2>&1 &
+  # give X time to come up
+  for _ in {1..20}; do xdpyinfo -display "$DISPLAY" >/dev/null 2>&1 && break || sleep 0.2; done
 fi
 
-# dbus (some DE apps want a session bus)
-if ! pgrep -x dbus-daemon >/dev/null 2>&1; then
-  nohup dbus-daemon --session --fork >>"$LOGDIR/dbus-daemon.log" 2>&1 || true
-fi
+# 2) session dbus (quietly)
+pgrep -x dbus-daemon >/dev/null 2>&1 || nohup dbus-daemon --session --fork >/tmp/dbus.log 2>&1 || true
 
-# Start xfce (desktop env) only once
-if ! pgrep -x xfce4-session >/dev/null 2>&1; then
-  # ensure XDG_RUNTIME_DIR for vscode user
-  export XDG_RUNTIME_DIR="/tmp/xdg-$(id -u)"
-  mkdir -p "$XDG_RUNTIME_DIR"; chmod 700 "$XDG_RUNTIME_DIR" || true
-  nohup startxfce4 >>"$LOGDIR/startxfce4.log" 2>&1 &
-fi
+# 3) XFCE session
+pgrep -x xfce4-session >/dev/null 2>&1 || nohup startxfce4 >/tmp/xfce.log 2>&1 &
 
-# x11vnc exports the X display as VNC on :5900
+# 4) x11vnc exposing the display on :5900
 if ! pgrep -x x11vnc >/dev/null 2>&1; then
-  start x11vnc x11vnc -display "$DISPLAY" -forever -shared -nopw -rfbport 5900 -nopw
+  log "starting x11vnc on :$VNC_PORT"
+  nohup x11vnc -display "$DISPLAY" -forever -shared -nopw -noxdamage -rfbport "$VNC_PORT" >/tmp/x11vnc.log 2>&1 &
 fi
 
-# websockify serves noVNC web UI and proxies to VNC
-# Ubuntu path is /usr/share/novnc (double-check in your image if needed)
-if ! pgrep -x websockify >/dev/null 2>&1; then
-  start websockify websockify --web /usr/share/novnc 6080 localhost:5900
+# 5) cert for TLS (Codespaces proxy expects HTTPS)
+if [ ! -f "$CERT_PATH" ]; then
+  log "creating self-signed cert at $CERT_PATH"
+  mkdir -p "$(dirname "$CERT_PATH")"
+  openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
+    -subj "/CN=localhost" -keyout "$CERT_PATH" -out "$CERT_PATH" >/tmp/novnc-cert.log 2>&1
 fi
 
-# Health info
-echo "noVNC should be reachable on port 6080."
-echo "Processes:"
-ps -ef | egrep 'Xvfb|xfce4|x11vnc|websockify' | grep -v egrep || true
+# 6) websockify + noVNC webroot on 6080 (HTTPS)
+if ! pgrep -f "websockify .* ${NOVNC_PORT} " >/dev/null 2>&1; then
+  log "starting websockify on :$NOVNC_PORT (HTTPS)"
+  nohup websockify --ssl-only --cert "$CERT_PATH" \
+    --web "$NOVNC_WEBROOT" "$NOVNC_PORT" localhost:"$VNC_PORT" >/tmp/websockify.log 2>&1 &
+fi
+
+log "ready: open the forwarded port ${NOVNC_PORT} (public) and visit /vnc.html?autoconnect=1"

@@ -50,7 +50,7 @@ When the process finishes successfully, you’ll see a log summary similar to th
 
 ---
 
-## 🖥️ Access the GUI via noVNC
+## Access the GUI via noVNC
 
 1. Open the **PORTS** tab in the Codespace.
 2. Click the 🌐 icon next to **port 6080** to open the noVNC desktop.
@@ -60,6 +60,14 @@ You’ll see the browser-based desktop environment:
 ![VNC Lite](images/10_vnc_lite.jpg)
 
 ---
+
+## View the Final Layout in GUI
+Inside the noVNC desktop terminal, launch the final GUI view:
+cd ~/Desktop/OpenROAD-flow-scripts/flow
+make gui_final
+
+![Open VNC](images/11_make_gui_final.jpg)
+![Open VNC](images/12_finalLayout.jpg)
 
 ## ⚠️ Important Notice
 

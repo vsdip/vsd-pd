@@ -42,9 +42,15 @@ RUN set -eux; \
   }; \
   rm -rf /var/lib/apt/lists/* /tmp/openroad.deb
 
-# Verify and wire up env
-RUN openroad -version || true
-ENV OPENROAD_EXE="/usr/bin/openroad"
+# Ensure OpenROAD is on PATH and wire env
+RUN set -eux; \
+  install -d /usr/local/bin; \
+  ln -sf /opt/openroad/bin/openroad /usr/local/bin/openroad; \
+  chmod +x /opt/openroad/bin/openroad || true; \
+  command -v openroad; \
+  openroad -version || true
+
+ENV OPENROAD_EXE="/opt/openroad/bin/openroad"
 
 
 ENV PATH="/usr/local/bin:${PATH}"

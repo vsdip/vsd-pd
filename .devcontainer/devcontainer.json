@@ -1,10 +1,18 @@
 {
-  "name": "OpenLane VLSI Workshop",
-  "build": { "dockerfile": "Dockerfile" },
+  "name": "OpenROAD cloud tools",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "forwardPorts": [6080],
   "portsAttributes": {
-    "6080": { "label": "noVNC Desktop", "visibility": "public" }
+    "6080": {
+      "label": "noVNC Desktop",
+      "onAutoForward": "openBrowser"
+    }
   },
-  "postStartCommand": "bash -lc '/usr/local/bin/start-desktop.sh || true; exit 0'",
-  "remoteUser": "vscode"
+  "overrideCommand": false,
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "DISPLAY": ":1"
+  }
 }

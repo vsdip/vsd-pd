@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-terminal thunar dbus-x11 x11vnc novnc websockify \
     magic ngspice gtkwave verilator iverilog \
     build-essential cmake ninja-build clang tcl-dev \
-    time bc gawk \
+    time bc gawk vim libqt5charts5 libyaml-cpp0.7 \
     tcl tcllib tcl-trf tclx tk locales sudo \
     perl libfile-which-perl ca-certificates gnupg lsb-release \
     python3-numpy python3-pandas python3-matplotlib python3-jinja2 python3-xlsxwriter \

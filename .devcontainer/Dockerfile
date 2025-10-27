@@ -84,10 +84,3 @@ EXPOSE 6080
 CMD ["/usr/bin/supervisord", "-n"]
 
 
-# Locale + user
-RUN locale-gen en_US.UTF-8
-ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en
-RUN useradd -m -s /bin/bash vscode && echo 'vscode ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-USER vscode
-WORKDIR /home/vscode
-RUN mkdir -p /home/vscode/Desktop

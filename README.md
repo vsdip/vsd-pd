@@ -19,7 +19,7 @@ It is designed for testing and learning **physical design (PD) flows** in a clou
 
 ---
 
-## 🧠 Run OpenROAD Flow Scripts
+##  Run OpenROAD Flow Scripts
 
 Once inside the Codespace terminal (or through the noVNC desktop terminal):
 
@@ -30,7 +30,7 @@ cd OpenROAD-flow-scripts/flow
 make
 ````
 
-If you encounter an error during synthesis, open the TCL file:
+# If you encounter an error during synthesis, open the TCL file:
 
 ```bash
 vim scripts/synth_stdcells.tcl

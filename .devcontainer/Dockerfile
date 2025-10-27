@@ -32,7 +32,7 @@ RUN set -eux; \
   rm -rf /var/lib/apt/lists/* /tmp/klayout.deb
 
 # -------- OpenROAD from your custom .deb --------
-ARG OPENROAD_DEB_URL="https://vsd-labs.sgp1.cdn.digitaloceanspaces.com/vsd-labs/openroad_2.0+custom_amd64.deb"
+ARG OPENROAD_DEB_URL="https://vsd-labs.sgp1.cdn.digitaloceanspaces.com/vsd-labs/openroad_2.0+custom+20251027_amd64.deb"
 RUN set -eux; \
   apt-get update && apt-get install -y --no-install-recommends wget ca-certificates; \
   wget -O /tmp/openroad.deb "$OPENROAD_DEB_URL"; \
@@ -50,17 +50,17 @@ ENV OPENROAD_EXE="/usr/bin/openroad"
 ENV PATH="/usr/local/bin:${PATH}"
 
 # (Optional) slang + yosys-slang plugin
-RUN set -eux; \
-  git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
-  cmake -S /tmp/slang -B /tmp/slang/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSLANG_INCLUDE_TESTS=OFF && \
-  cmake --build /tmp/slang/build -j"$(nproc)"
-RUN set -eux; \
-  git clone --recursive https://github.com/povik/yosys-slang /tmp/yosys-slang && \
-  make -C /tmp/yosys-slang YOSYS=/opt/oss-cad-suite/bin/yosys SLANG_DIR=/tmp/slang/build -j"$(nproc)"; \
-  install -Dm755 /tmp/yosys-slang/build/slang.so /opt/oss-cad-suite/share/yosys/plugins/slang.so && \
-  rm -rf /tmp/yosys-slang
-ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins"
-RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
+#RUN set -eux; \
+#  git clone --depth=1 https://github.com/MikePopoloski/slang /tmp/slang && \
+#  cmake -S /tmp/slang -B /tmp/slang/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSLANG_INCLUDE_TESTS=OFF && \
+#  cmake --build /tmp/slang/build -j"$(nproc)"
+#RUN set -eux; \
+#  git clone --recursive https://github.com/povik/yosys-slang /tmp/yosys-slang && \
+#  make -C /tmp/yosys-slang YOSYS=/opt/oss-cad-suite/bin/yosys SLANG_DIR=/tmp/slang/build -j"$(nproc)"; \
+#  install -Dm755 /tmp/yosys-slang/build/slang.so /opt/oss-cad-suite/share/yosys/plugins/slang.so && \
+#  rm -rf /tmp/yosys-slang
+#ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins"
+#RUN /opt/oss-cad-suite/bin/yosys -m slang -p "slang_version" || true
 
 # OpenROAD-flow-scripts
 #RUN git clone --depth 1 https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts /opt/orfs

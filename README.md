@@ -63,9 +63,10 @@ You’ll see the browser-based desktop environment:
 
 ## View the Final Layout in GUI
 Inside the noVNC desktop terminal, launch the final GUI view:
-cd ~/Desktop/OpenROAD-flow-scripts/flow
+```bash
+cd OpenROAD-flow-scripts/flow
 make gui_final
-
+```
 ![Open VNC](images/11_make_gui_final.jpg)
 ![Open VNC](images/12_finalLayout.jpg)
 

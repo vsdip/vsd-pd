@@ -5,16 +5,17 @@ ENV DISPLAY=:1
 
 # Base packages (your original set)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget curl unzip git make python3 python3-pip \
-    xvfb xfce4 xfce4-session xfce4-panel xfdesktop4 xfwm4 \
-    xfce4-terminal thunar dbus-x11 x11vnc novnc websockify \
+    wget curl unzip git make python3 python3-pip python3-numpy python3-pandas python3-matplotlib python3-jinja2 python3-xlsxwriter \
+    xvfb xfce4 xfce4-session xfce4-panel xfdesktop4 xfwm4 xfce4-terminal thunar dbus-x11 x11vnc novnc websockify supervisor \
     magic ngspice gtkwave verilator iverilog \
-    build-essential cmake ninja-build clang tcl-dev \
-    time bc gawk vim libqt5charts5 libyaml-cpp0.7 \
-    tcl tcllib tcl-trf tclx tk locales sudo \
-    perl libfile-which-perl ca-certificates gnupg lsb-release \
-    python3-numpy python3-pandas python3-matplotlib python3-jinja2 python3-xlsxwriter \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential autoconf automake libtool m4 cmake ninja-build clang \
+    tcl tcl-dev tcllib tcl-trf tclx tk tk-dev locales sudo \
+    perl libfile-which-perl ca-certificates gnupg lsb-release pkg-config \
+    libcairo2-dev libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev \
+    libx11-dev libxext-dev libxrender-dev libxpm-dev libxaw7-dev libfontconfig1-dev \
+    libreadline-dev libncurses-dev flex bison gawk tcsh time bc vim \
+    libqt5charts5 libyaml-cpp0.7 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # OSS CAD Suite (Yosys, etc.)
 RUN set -eux; \

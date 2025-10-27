@@ -1,6 +1,7 @@
 
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:1
 
 # Base packages (your original set)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -75,9 +76,13 @@ ENV YOSYS_PLUGIN_PATH="/opt/oss-cad-suite/share/yosys/plugins" \
     YOSYS_EXE="/opt/oss-cad-suite/bin/yosys" \
     PATH="/opt/oss-cad-suite/bin:/usr/local/bin:${PATH}"
 
-# noVNC desktop starter (the resilient script you now use)
-COPY start-desktop.sh /usr/local/bin/start-desktop.sh
-RUN chmod +x /usr/local/bin/start-desktop.sh
+# -----------------------------
+# noVNC desktop environment
+# -----------------------------
+COPY supervisord.conf /etc/supervisor/conf.d/vnc.conf
+EXPOSE 6080
+CMD ["/usr/bin/supervisord", "-n"]
+
 
 # Locale + user
 RUN locale-gen en_US.UTF-8

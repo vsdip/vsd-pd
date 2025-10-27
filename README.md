@@ -30,7 +30,7 @@ cd OpenROAD-flow-scripts/flow
 make
 ````
 
-# If you encounter an error during synthesis, open the TCL file:
+## If you encounter an error during synthesis, open the TCL file:
 
 ```bash
 vim scripts/synth_stdcells.tcl

@@ -29,13 +29,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # OSS CAD Suite (Yosys, etc.)
+#RUN set -eux; \
+#  curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
+#    -o /tmp/oss-cad.tgz; \
+#  mkdir -p /opt && tar -xzf /tmp/oss-cad.tgz -C /opt; \
+#  ln -s /opt/oss-cad-suite /opt/oss-cad; \
+#  rm /tmp/oss-cad.tgz
+#ENV PATH="/opt/oss-cad/bin:${PATH}"
+
+# Yosys (install from your .deb)
+ARG YOSYS_DEB_URL="https://vsd-labs.sgp1.cdn.digitaloceanspaces.com/vsd-labs/yosys_0.9-2ubuntu1_amd64.deb"
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN set -eux; \
-  curl -L https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-10-03/oss-cad-suite-linux-x64-20241003.tgz \
-    -o /tmp/oss-cad.tgz; \
-  mkdir -p /opt && tar -xzf /tmp/oss-cad.tgz -C /opt; \
-  ln -s /opt/oss-cad-suite /opt/oss-cad; \
-  rm /tmp/oss-cad.tgz
-ENV PATH="/opt/oss-cad/bin:${PATH}"
+    apt-get update; \
+    apt-get install -y --no-install-recommends ca-certificates curl; \
+    curl -fL "$YOSYS_DEB_URL" -o /tmp/yosys.deb; \
+    apt-get install -y /tmp/yosys.deb; \
+    rm -rf /var/lib/apt/lists/* /tmp/yosys.deb
+
+# sanity check
+RUN yosys -V
+
 
 # KLayout (optional)
 RUN set -eux; \

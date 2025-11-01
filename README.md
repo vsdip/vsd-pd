@@ -30,21 +30,6 @@ cd OpenROAD-flow-scripts/flow
 make
 ````
 
-## If you encounter an error during "make", open the TCL file:
-
-```bash
-vim scripts/synth_stdcells.tcl
-```
-
-Comment out the second `read_liberty` line, as shown below:
-![Edit synth\_stdcells.tcl](images/7_commentSecondReadlib.jpg)
-
-Then rerun the flow:
-
-```bash
-make
-```
-
 When the process finishes successfully, you’ll see a log summary similar to this:
 ![Flow Complete](images/8_makeCompletes.jpg)
 
